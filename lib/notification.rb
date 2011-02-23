@@ -1,13 +1,11 @@
 require 'rubygems'
 require 'tinder'
 
-class GitCampfireNotification
+class CFN
 
   def initialize(options = {})
-    # campfire_config keys: subdomain, use_ssl, email, password, room
-    @campfire_config = options[:campfire_config]
+    @config = options[:config]
 
-    # git keys: ref_name, old_revision, new_revision
     @ref_name     = options[:ref_name]
     @old_revision = options[:old_revision]
     @new_revision = options[:new_revision]
@@ -22,15 +20,14 @@ class GitCampfireNotification
     end
   end
 
-
   private
 
-  def campfire_room
-    if @campfire.nil?
-      @campfire = Tinder::Campfire.new(@campfire_config[:subdomain], :ssl => @campfire_config[:use_ssl])
-      @campfire.login(@campfire_config[:email], @campfire_config[:password])
-    end
-    @campfire_room ||= @campfire.find_room_by_name(@campfire_config[:room])
+  def room
+    @room ||= (@config[:room] ? campfire.find_room_by_name(@config[:room]) : campfire.rooms.first)
+  end
+
+  def campfire
+    @campfire ||= Tinder::Campfire.new(@config[:subdomain], :token => @config[:token])
   end
 
   def project_name
@@ -139,7 +136,7 @@ class GitCampfireNotification
     if ENV["USE_STDOUT"]
       paste ? $stdout.puts("[campfire p] #{what}") : $stdout.puts("[campfire] #{what}")
     else
-      paste ? campfire_room.paste(what) : campfire_room.speak(what)
+      paste ? room.paste(what) : room.speak(what)
     end
   end
 
